@@ -1,4 +1,4 @@
-# SocMediaScrapper Telegram Bot
+# [SocMediaScrapper Telegram Bot](https://t.me/UzSavebot)
 ------------------------
 
 ## Upload video from
