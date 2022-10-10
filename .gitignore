@@ -1,0 +1,16 @@
+.idea
+app/.idea
+app/__pycache__
+app/database/__pycache__
+app/database/db.sqlite
+app/linux64_google_chrome
+app/grabber/__pycache__
+app/grabber/donqhomo.session
+app/instagram/__pycache__
+app/tiktok/__pycache__
+app/venv
+app/youtube/__pycache__
+app/.env
+app/chromedriver
+app/config.ini
+app/donqhomo.session
