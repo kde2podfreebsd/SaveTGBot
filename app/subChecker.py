@@ -6,3 +6,4 @@ def check(channel:str, username:str) -> str:
     answ = answ.replace('\n', '')
     return answ
 
+check("https://t.me/inst_yt_tt_bot", "donqhomo")

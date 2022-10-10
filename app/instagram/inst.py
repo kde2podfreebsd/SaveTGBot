@@ -8,7 +8,7 @@ import time
 import requests
 from dotenv import load_dotenv
 import os
-from pyvirtualdisplay import Display
+# from pyvirtualdisplay import Display
 
 config = load_dotenv()
 
@@ -21,10 +21,10 @@ op = webdriver.ChromeOptions()
 
 def get_src(url:str):
     try:
-        op.add_argument("--no-sandbox");
-        op.add_argument("--disable-dev-shm-usage");
-        display = Display(visible=0, size=(800, 800))
-        display.start()
+        # op.add_argument("--no-sandbox");
+        # op.add_argument("--disable-dev-shm-usage");
+        # display = Display(visible=0, size=(800, 800))
+        # display.start()
         src = list()
         data_type_list = list()
         driver = webdriver.Chrome(service=ser, options=op)
@@ -51,7 +51,7 @@ def get_src(url:str):
     finally:
         driver.close()
         driver.quit()
-        display.stop()
+        # display.stop()
 
 def upload_video_inst(chat_id: str, url: str):
     try:

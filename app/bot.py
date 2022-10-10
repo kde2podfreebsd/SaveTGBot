@@ -42,7 +42,7 @@ def start(message) -> None:
 @bot.message_handler(commands=['language'])
 def language(message) -> None:
     try:
-        msg = bot.send_message(message.chat.id, "Выберите язык", reply_markup=mp.off_markup, parse_mode='MARKDOWN')
+        msg = bot.send_message(message.chat.id, "Выберите язык", reply_markup=mp.language, parse_mode='MARKDOWN')
         bot.register_next_step_handler(msg, set_language)
 
     except Exception as e:

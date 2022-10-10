@@ -11,4 +11,4 @@ app/venv
 .env
 config.ini
 donqhomo.session
-
+chromedriver
