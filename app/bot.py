@@ -20,11 +20,11 @@ config = load_dotenv()
 bot = telebot.TeleBot(os.getenv("TG_API_KEY"))
 
 users = dict()
+repl_message_user = dict()
 ads = {'shortname': '', 'text':'', 'file_path':'', 'media_type':'', 'btn_text': '', 'btn_url':''}
-language_list = dict()
 sub_status = False
 ad_status = False
-channel_link = ' https://t.me/inst_yt_tt_bot'
+channel_link = 'https://t.me/CryptoVedma'
 # https://t.me/inst_yt_tt_bot?start=token
 @bot.message_handler(commands=['start'])
 def start(message) -> None:
@@ -34,7 +34,8 @@ def start(message) -> None:
             db.init_user(chat_id=message.chat.id, username=message.chat.username, date_of_join=date_today(), referal_code='N/A')
         else:
             db.init_user(chat_id=message.chat.id, username=message.chat.username, date_of_join=date_today(),referal_code=unique_code)
-        bot.send_message(message.chat.id, mp.menu_message, reply_markup=mp.off_markup, parse_mode='MARKDOWN')
+        msg = bot.send_message(message.chat.id, mp.choose_language, reply_markup=mp.language, parse_mode='MARKDOWN')
+        bot.register_next_step_handler(msg, set_language)
 
     except Exception as e:
         bot.reply_to(message, f'{e}')
@@ -42,16 +43,22 @@ def start(message) -> None:
 @bot.message_handler(commands=['language'])
 def language(message) -> None:
     try:
-        msg = bot.send_message(message.chat.id, "Выберите язык", reply_markup=mp.language, parse_mode='MARKDOWN')
+        msg = bot.send_message(message.chat.id, mp.choose_language, reply_markup=mp.language, parse_mode='MARKDOWN')
         bot.register_next_step_handler(msg, set_language)
 
     except Exception as e:
         bot.reply_to(message, f'{e}')
 
 def set_language(message):
-    language_list[message.chat.id] = message.text
-    bot.send_message(message.chat.id, f"Language:{language_list[message.chat.id]}", reply_markup=mp.off_markup, parse_mode='MARKDOWN')
-    bot.send_message(message.chat.id, mp.menu_message, reply_markup=mp.off_markup, parse_mode='MARKDOWN')
+    db.set_language(chat_id=message.chat.id, language=message.text)
+    bot.send_message(message.chat.id, f"Language:{message.text}", reply_markup=mp.off_markup, parse_mode='MARKDOWN')
+
+    if message.text == 'Русский 🇷🇺':
+        bot.send_message(message.chat.id, mp.menu_message_ru, reply_markup=mp.off_markup, parse_mode='MARKDOWN')
+    elif message.text == 'O’zbek 🇺🇿':
+        bot.send_message(message.chat.id, mp.menu_message_uz, reply_markup=mp.off_markup, parse_mode='MARKDOWN')
+    else:
+        bot.send_message(message.chat.id, mp.menu_message_ru, reply_markup=mp.off_markup, parse_mode='MARKDOWN')
 
 @bot.message_handler(commands=['admin', 'admin_menu'])
 def admin(message) -> None:
@@ -80,7 +87,8 @@ def stat(message) -> None:
                 today_downloads=stat['today_downloads'],
                 youtube=stat['youtube'],
                 tiktok=stat['tiktok'],
-                instagram=stat['instagram']
+                instagram=stat['instagram'],
+                youtube_shorts=stat['youtube_shorts']
             )
             bot.send_message(message.chat.id, msg, reply_markup=mp.menu_admin, parse_mode='MARKDOWN')
         else:
@@ -418,7 +426,7 @@ def send_random_post(chat_id:int):
             else:
                 markup = mp.get_inline_url_btn(text = ads[random_int].btn_text, url = ads[random_int].btn_url)
                 if ads[random_int].media_type == 'jpg':
-                    bot.send_document(chat_id, media, caption=ads[random_int].text, parse_mode='MARKDOWN', reply_markup=markup)
+                    bot.send_photo(chat_id, media, caption=ads[random_int].text, parse_mode='MARKDOWN', reply_markup=markup)
                 else:
                     bot.send_video(chat_id, media, caption=ads[random_int].text, parse_mode='MARKDOWN',reply_markup=markup)
     except Exception as e:
@@ -438,13 +446,282 @@ def get_ad(chat_id:int,ad):
 @bot.callback_query_handler(func = lambda call:True)
 def callback_handler(call):
     try:
+        global channel_link
+        language = db.get_language(chat_id=call.message.chat.id)
         if call.data == 'check':
-            global channel_link
             ans = check(channel=channel_link, username=str(call.message.chat.username).lower())
             if ans == 'False':
-                bot.send_message(chat_id=call.message.chat.id, text='Проверьте, вы точно подписались на канал?', reply_markup=mp.off_markup, parse_mode='MARKDOWN')
+                if language == 'O’zbek 🇺🇿':
+                    print(repl_message_user[call.message.chat.id])
+                    bot.delete_message(call.message.chat.id, message_id=repl_message_user[call.message.chat.id], timeout=0.2)
+                    language_usr = db.get_language(chat_id=call.message.chat.id)
+                    msg = bot.send_message(chat_id=call.message.chat.id, text=mp.channel_post_uz,reply_markup=mp.inline_sub_mp(channel_url=channel_link, language= language_usr), parse_mode='MARKDOWN')
+                    repl_message_user[call.message.chat.id] = msg.message_id
+                else:
+                    bot.delete_message(call.message.chat.id, message_id=repl_message_user[call.message.chat.id],timeout=0.2)
+                    language_usr = db.get_language(chat_id=call.message.chat.id)
+                    msg = bot.send_message(chat_id=call.message.chat.id, text=mp.channel_post_ru,reply_markup=mp.inline_sub_mp(channel_url=channel_link, language=language_usr),parse_mode='MARKDOWN')
+                    repl_message_user[call.message.chat.id] = msg.message_id
+
             else:
-                bot.send_message(chat_id=call.message.chat.id, text='Отправьте ссылку заново', reply_markup=mp.off_markup, parse_mode='MARKDOWN')
+                print(users[call.message.chat.id])
+                language_usr = db.get_language(chat_id=call.message.chat.id)
+                file_path = False
+                urls = extractor.find_urls(users[call.message.chat.id])
+                if len(urls) == 0:
+                    if language_usr == 'O’zbek 🇺🇿':
+                        bot.reply_to(call.message,
+                                     f'Noto’gri havola yubordingiz!\nInstagram, TikTok yoki YouTube dan to’g’ri havola yuboring.',
+                                     reply_markup=mp.off_markup)
+                        file_path = False
+                    else:
+                        bot.reply_to(call.message,
+                                     f'Неверная ссылка!\nОтправьте правильную ссылку из Instagram, TikTok или YouTube.',
+                                     reply_markup=mp.off_markup)
+                        file_path = False
+                elif len(urls) > 1:
+                    if language_usr == 'O’zbek 🇺🇿':
+                        bot.reply_to(call.message,
+                                     f"juda ko'p havolalar\nInstagram, TikTok yoki YouTube dan to’g’ri havola yuboring.",
+                                     reply_markup=mp.off_markup)
+                        file_path = False
+                    else:
+                        bot.reply_to(call.message,
+                                     f'Слишком много ссылок!\nОтправьте правильную ссылку из Instagram, TikTok или YouTube.',
+                                     reply_markup=mp.off_markup)
+                else:
+                    users[call.message.chat.id] = urls[0]
+                    # global channel_link
+                    ans = check(channel=channel_link, username=str(call.message.chat.username).lower())
+                    global sub_status
+                    if ans == 'False' and sub_status == True and language_usr == 'Русский 🇷🇺':
+                        msg = bot.send_message(chat_id=call.message.chat.id, text=mp.channel_post_ru,
+                                               reply_markup=mp.inline_sub_mp(channel_url=channel_link,
+                                                                             language=language_usr),
+                                               parse_mode='MARKDOWN')
+                        repl_message_user[call.message.chat.id] = msg.message_id
+                        file_path = False
+                    elif ans == 'False' and sub_status == True and language_usr == 'O’zbek 🇺🇿':
+                        msg = bot.send_message(chat_id=call.message.chat.id, text=mp.channel_post_uz,
+                                               reply_markup=mp.inline_sub_mp(channel_url=channel_link,
+                                                                             language=language_usr),
+                                               parse_mode='MARKDOWN')
+                        repl_message_user[call.message.chat.id] = msg.message_id
+                        file_path = False
+                    else:
+                        service = service_type(url=users[call.message.chat.id])
+                        if service == False and language_usr == 'O’zbek 🇺🇿':
+                            bot.reply_to(call.message,
+                                         f'Noto’gri havola yubordingiz!\nInstagram, TikTok yoki YouTube dan to’g’ri havola yuboring.',
+                                         reply_markup=mp.off_markup)
+                            file_path = False
+                        elif service == False and language_usr != 'O’zbek 🇺🇿':
+                            bot.reply_to(call.message,
+                                         f'Неверная ссылка!\nОтправьте правильную ссылку из Instagram, TikTok или YouTube.',
+                                         reply_markup=mp.off_markup)
+                            file_path = False
+
+                        elif service == 'youtube':
+                            if language_usr == 'O’zbek 🇺🇿':
+                                gif1_msg = bot.send_message(call.message.chat.id, "YouTubedan yuklanyabti…",
+                                                            reply_to_message_id=call.message.message_id)
+                                gif1_msg_id = gif1_msg.message_id
+
+                                file_path = download_YT(url=users[call.message.chat.id], chatid=call.message.chat.id, ismp3=True)
+                                if file_path == 'Video too long':
+                                    bot.reply_to(call.message, f'video juda uzun', reply_markup=mp.off_markup)
+
+                                # gif2 = types.InputMediaDocument(media=open('video/send.mp4', 'rb'), caption='Отправляем в тг')
+                                bot.edit_message_text(text="telegramga yuboring", chat_id=call.message.chat.id,
+                                                      message_id=gif1_msg_id)
+
+                                doc = open(file_path, 'rb')
+                                init_dw_output = db.init_download(chat_id=call.message.chat.id, src_type='youtube',
+                                                                  date_of_join=date_today(), url=users[call.message.chat.id])
+                                print(init_dw_output)
+                                bot.send_document(call.message.chat.id, doc, reply_markup=mp.off_markup,
+                                                  caption=mp.get_caption(language=language_usr), parse_mode="MARKDOWN")
+
+                            else:
+                                gif1_msg = bot.send_message(call.message.chat.id, "Скачиваем из youtube",
+                                                            reply_to_message_id=call.message.message_id)
+                                gif1_msg_id = gif1_msg.message_id
+
+                                file_path = download_YT(url=users[call.message.chat.id], chatid=call.message.chat.id, ismp3=True)
+                                if file_path == 'Video too long':
+                                    bot.reply_to(call.message, f'Видео слишком длинное;(', reply_markup=mp.off_markup)
+
+                                # gif2 = types.InputMediaDocument(media=open('video/send.mp4', 'rb'), caption='Отправляем в тг')
+                                bot.edit_message_text(text="Отправляем в телеграмм", chat_id=call.message.chat.id,
+                                                      message_id=gif1_msg_id)
+
+                                doc = open(file_path, 'rb')
+                                init_dw_output = db.init_download(chat_id=call.message.chat.id, src_type='youtube',
+                                                                  date_of_join=date_today(), url=users[call.message.chat.id])
+                                print(init_dw_output)
+                                bot.send_document(call.message.chat.id, doc, reply_markup=mp.off_markup,
+                                                  caption=mp.get_caption(language=language_usr), parse_mode="MARKDOWN")
+
+                        elif service == 'youtube_shorts':
+                            if language_usr == 'O’zbek 🇺🇿':
+                                gif1_msg = bot.send_message(call.message.chat.id, "YouTubedan yuklanyabti…",
+                                                            reply_to_message_id=call.message.message_id)
+                                gif1_msg_id = gif1_msg.message_id
+
+                                file_path = download_YT(url=users[call.message.chat.id], chatid=call.message.chat.id, ismp3=False)
+                                if file_path == 'Video too long':
+                                    bot.reply_to(call.message, f'video juda uzun', reply_markup=mp.off_markup)
+
+                                # gif2 = types.InputMediaDocument(media=open('video/send.mp4', 'rb'), caption='Отправляем в тг')
+                                bot.edit_message_text(text="telegramga yuboring", chat_id=call.message.chat.id,
+                                                      message_id=gif1_msg_id)
+
+                                doc = open(file_path, 'rb')
+                                init_dw_output = db.init_download(chat_id=call.message.chat.id, src_type='youtube_shorts',
+                                                                  date_of_join=date_today(), url=users[call.message.chat.id])
+                                print(init_dw_output)
+                                bot.send_document(call.message.chat.id, doc, reply_markup=mp.off_markup,
+                                                  caption=mp.get_caption(language=language_usr), parse_mode="MARKDOWN")
+
+                            else:
+                                gif1_msg = bot.send_message(call.message.chat.id, "Скачиваем из youtube",
+                                                            reply_to_message_id=call.message.message_id)
+                                gif1_msg_id = gif1_msg.message_id
+
+                                file_path = download_YT(url=users[call.message.chat.id], chatid=call.message.chat.id, ismp3=False)
+                                if file_path == 'Video too long':
+                                    bot.reply_to(call.message, f'Видео слишком длинное;(', reply_markup=mp.off_markup)
+
+                                # gif2 = types.InputMediaDocument(media=open('video/send.mp4', 'rb'), caption='Отправляем в тг')
+                                bot.edit_message_text(text="Отправляем в телеграмм", chat_id=call.message.chat.id,
+                                                      message_id=gif1_msg_id)
+
+                                doc = open(file_path, 'rb')
+                                init_dw_output = db.init_download(chat_id=call.message.chat.id, src_type='youtube_shorts',
+                                                                  date_of_join=date_today(), url=users[call.message.chat.id])
+                                print(init_dw_output)
+                                bot.send_document(call.message.chat.id, doc, reply_markup=mp.off_markup,
+                                                  caption=mp.get_caption(language=language_usr), parse_mode="MARKDOWN")
+
+                        elif service == 'tiktok':
+                            if language_usr == 'O’zbek 🇺🇿':
+                                gif1_msg = bot.send_message(call.message.chat.id, "TikTokdan yuklanyabti…",
+                                                            reply_to_message_id=call.message.message_id)
+                                gif1_msg_id = gif1_msg.message_id
+
+                                output = upload_video_tt(chat_id=str(call.message.chat.id), url=users[call.message.chat.id])
+                                if output == 'not found':
+                                    bot.reply_to(call.message, f'media juda uzun', reply_markup=mp.off_markup)
+
+                                file_path = os.getenv("downloads_pwd") + output
+
+                                # gif2 = types.InputMediaDocument(media=open('video/send.mp4', 'rb'), caption='Отправляем в тг')
+                                bot.edit_message_text(text="telegramga yuboring", chat_id=call.message.chat.id,
+                                                      message_id=gif1_msg_id)
+
+                                doc = open(file_path, 'rb')
+                                init_dw_output = db.init_download(chat_id=call.message.chat.id, src_type='tiktok',
+                                                                  date_of_join=date_today(), url=users[call.message.chat.id])
+                                print(init_dw_output)
+                                bot.send_document(call.message.chat.id, doc, reply_markup=mp.off_markup,
+                                                  caption=mp.get_caption(language=language_usr))
+
+                            else:
+                                gif1_msg = bot.send_message(call.message.chat.id, "Скачиваем из tik-tok",
+                                                            reply_to_message_id=call.message.message_id)
+                                gif1_msg_id = gif1_msg.message_id
+
+                                output = upload_video_tt(chat_id=str(call.message.chat.id), url=users[call.message.chat.id])
+                                if output == 'not found':
+                                    bot.reply_to(call.message, f'Мы не можем найти видео по этой ссылке',
+                                                 reply_markup=mp.off_markup)
+
+                                file_path = os.getenv("downloads_pwd") + output
+
+                                # gif2 = types.InputMediaDocument(media=open('video/send.mp4', 'rb'), caption='Отправляем в тг')
+                                bot.edit_message_text(text="Отправляем в тг", chat_id=call.message.chat.id,
+                                                      message_id=gif1_msg_id)
+
+                                doc = open(file_path, 'rb')
+                                init_dw_output = db.init_download(chat_id=call.message.chat.id, src_type='tiktok',
+                                                                  date_of_join=date_today(), url=users[call.message.chat.id])
+                                print(init_dw_output)
+                                bot.send_document(call.message.chat.id, doc, reply_markup=mp.off_markup,
+                                                  caption=mp.get_caption(language=language_usr))
+
+
+                        elif service == 'instagram':
+                            if language_usr == 'O’zbek 🇺🇿':
+                                file_path = list()
+                                gif1_msg = bot.send_message(call.message.chat.id, "Instagramdan yuklanyabti…",
+                                                            reply_to_message_id=call.message.message_id)
+                                gif1_msg_id = gif1_msg.message_id
+
+                                output = upload_video_inst(chat_id=str(call.message.chat.id), url=users[call.message.chat.id])
+                                if output == 'not found':
+                                    bot.reply_to(call.message, f'media juda uzun', reply_markup=mp.off_markup)
+
+                                for i in range(len(output)):
+                                    file_path.append(os.getenv("downloads_pwd") + output[i])
+
+                                # gif2 = types.InputMediaDocument(media=open('video/send.mp4', 'rb'), caption='Отправляем в тг')
+                                bot.edit_message_text(text="telegramga yuboring", chat_id=call.message.chat.id,
+                                                      message_id=gif1_msg_id)
+
+                                for i in range(len(file_path)):
+                                    doc = open(file_path[i], 'rb')
+                                    init_dw_output = db.init_download(chat_id=call.message.chat.id, src_type='instagram',
+                                                                      date_of_join=date_today(),
+                                                                      url=users[call.message.chat.id])
+                                    print(init_dw_output)
+                                    bot.send_document(call.message.chat.id, doc, reply_markup=mp.off_markup,
+                                                      caption=mp.get_caption(language=language_usr))
+                                    subprocess.run(f'rm {file_path[i]}', shell=True, capture_output=True)
+                                file_path = False
+
+                            elif language_usr == 'O’zbek 🇺🇿':
+                                file_path = list()
+                                gif1_msg = bot.send_message(call.message.chat.id, "Скачивается из Инстаграм",
+                                                            reply_to_message_id=call.message.message_id)
+                                gif1_msg_id = gif1_msg.message_id
+
+                                output = upload_video_inst(chat_id=str(call.message.chat.id), url=users[call.message.chat.id])
+                                if output == 'not found':
+                                    bot.reply_to(call.message, f'мы не можем найти медиа по этой ссылке',
+                                                 reply_markup=mp.off_markup)
+
+                                for i in range(len(output)):
+                                    file_path.append(os.getenv("downloads_pwd") + output[i])
+
+                                # gif2 = types.InputMediaDocument(media=open('video/send.mp4', 'rb'), caption='Отправляем в тг')
+                                bot.edit_message_text(text="telegramga yuboring", chat_id=call.message.chat.id,
+                                                      message_id=gif1_msg_id)
+
+                                for i in range(len(file_path)):
+                                    doc = open(file_path[i], 'rb')
+                                    init_dw_output = db.init_download(chat_id=call.message.chat.id, src_type='instagram',
+                                                                      date_of_join=date_today(),
+                                                                      url=users[call.message.chat.id])
+                                    print(init_dw_output)
+                                    bot.send_document(call.message.chat.id, doc, reply_markup=mp.off_markup,
+                                                      caption=mp.get_caption(language=language_usr))
+                                    subprocess.run(f'rm {file_path[i]}', shell=True, capture_output=True)
+                                file_path = False
+
+
+                        else:
+                            file_path = False
+
+                        global ad_status
+                        print(ad_status)
+                        if ad_status == True:
+                            send_random_post(chat_id=call.message.chat.id)
+                        else:
+                            pass
+
+
+
+
     except Exception as e:
         print(e)
 
@@ -452,86 +729,222 @@ def callback_handler(call):
 @bot.message_handler(content_types=["text"])
 def text_handler(message):
     try:
+        language_usr = db.get_language(chat_id=message.chat.id)
+        file_path = False
         urls = extractor.find_urls(message.text)
         if len(urls) == 0:
-            bot.send_message(chat_id=message.chat.id, text=mp.invalid_url, reply_markup=mp.off_markup, parse_mode='MARKDOWN')
-            file_path = False
+            if language_usr == 'O’zbek 🇺🇿':
+                bot.reply_to(message,
+                             f'Noto’gri havola yubordingiz!\nInstagram, TikTok yoki YouTube dan to’g’ri havola yuboring.',
+                             reply_markup=mp.off_markup)
+                file_path = False
+            else:
+                bot.reply_to(message,
+                             f'Неверная ссылка!\nОтправьте правильную ссылку из Instagram, TikTok или YouTube.',
+                             reply_markup=mp.off_markup)
+                file_path = False
         elif len(urls) > 1:
-            bot.send_message(chat_id=message.chat.id, text=mp.toomuch_urls)
-            file_path = False
+            if language_usr == 'O’zbek 🇺🇿':
+                bot.reply_to(message,
+                             f"juda ko'p havolalar\nInstagram, TikTok yoki YouTube dan to’g’ri havola yuboring.",
+                             reply_markup=mp.off_markup)
+                file_path = False
+            else:
+                bot.reply_to(message,
+                             f'Слишком много ссылок!\nОтправьте правильную ссылку из Instagram, TikTok или YouTube.',
+                             reply_markup=mp.off_markup)
         else:
             users[message.chat.id] = urls[0]
             global channel_link
             ans = check(channel=channel_link, username=str(message.chat.username).lower())
             global sub_status
-            if ans == 'False' and sub_status == True:
-                bot.send_message(chat_id=message.chat.id, text=mp.channel_post, reply_markup=mp.inline_sub_mp(channel_url=channel_link), parse_mode='MARKDOWN')
+            if ans == 'False' and sub_status == True and language_usr == 'Русский 🇷🇺':
+                msg = bot.send_message(chat_id=message.chat.id, text=mp.channel_post_ru, reply_markup=mp.inline_sub_mp(channel_url=channel_link, language=language_usr), parse_mode='MARKDOWN')
+                repl_message_user[message.chat.id] = msg.message_id
+                file_path = False
+            elif ans == 'False' and sub_status == True and language_usr == 'O’zbek 🇺🇿':
+                msg = bot.send_message(chat_id=message.chat.id, text=mp.channel_post_uz,reply_markup=mp.inline_sub_mp(channel_url=channel_link, language= language_usr), parse_mode='MARKDOWN')
+                repl_message_user[message.chat.id] = msg.message_id
                 file_path = False
             else:
                 service = service_type(url=users[message.chat.id])
-                if service == False:
-                    bot.reply_to(message, f'Мы не можем найти медиа по этой ссылке', reply_markup=mp.off_markup)
+                if service == False and language_usr == 'O’zbek 🇺🇿':
+                    bot.reply_to(message, f'Noto’gri havola yubordingiz!\nInstagram, TikTok yoki YouTube dan to’g’ri havola yuboring.', reply_markup=mp.off_markup)
+                    file_path = False
+                elif service == False and language_usr != 'O’zbek 🇺🇿':
+                    bot.reply_to(message, f'Неверная ссылка!\nОтправьте правильную ссылку из Instagram, TikTok или YouTube.', reply_markup=mp.off_markup)
                     file_path = False
 
                 elif service == 'youtube':
-                    gif1 = open('video/cat.mp4', 'rb')
-                    gif1_msg = bot.send_document(message.chat.id, gif1, caption='Скачиваем с ютуба...', reply_to_message_id=message.message_id)
-                    gif1_msg_id = gif1_msg.message_id
+                    if language_usr == 'O’zbek 🇺🇿':
+                        gif1_msg = bot.send_message(message.chat.id, "YouTubedan yuklanyabti…",
+                                                    reply_to_message_id=message.message_id)
+                        gif1_msg_id = gif1_msg.message_id
 
-                    file_path = download_YT(url=users[message.chat.id], chatid=message.chat.id, ismp3=True)
-                    if file_path == 'Video too long':
-                        bot.reply_to(message, f'Видео слишком длинное;(', reply_markup=mp.off_markup)
+                        file_path = download_YT(url=users[message.chat.id], chatid=message.chat.id, ismp3=True)
+                        if file_path == 'Video too long':
+                            bot.reply_to(message, f'video juda uzun', reply_markup=mp.off_markup)
 
-                    gif2 = types.InputMediaDocument(media=open('video/send.mp4', 'rb'), caption='Отправляем в тг')
-                    bot.edit_message_media(media=gif2, chat_id=message.chat.id, message_id=gif1_msg_id)
+                        # gif2 = types.InputMediaDocument(media=open('video/send.mp4', 'rb'), caption='Отправляем в тг')
+                        bot.edit_message_text(text="telegramga yuboring", chat_id=message.chat.id, message_id=gif1_msg_id)
 
-                    doc = open(file_path, 'rb')
-                    init_dw_output = db.init_download(chat_id=message.chat.id, src_type='youtube',date_of_join=date_today(),url=users[message.chat.id])
-                    print(init_dw_output)
-                    bot.send_document(message.chat.id, doc, reply_markup=mp.markup_banner_inline, caption=mp.get_caption(url=users[message.chat.id]))
+                        doc = open(file_path, 'rb')
+                        init_dw_output = db.init_download(chat_id=message.chat.id, src_type='youtube',
+                                                          date_of_join=date_today(), url=users[message.chat.id])
+                        print(init_dw_output)
+                        bot.send_document(message.chat.id, doc, reply_markup=mp.off_markup,
+                                          caption=mp.get_caption(language=language_usr), parse_mode="MARKDOWN")
+
+                    else:
+                        gif1_msg = bot.send_message(message.chat.id, "Скачиваем из youtube", reply_to_message_id=message.message_id)
+                        gif1_msg_id = gif1_msg.message_id
+
+                        file_path = download_YT(url=users[message.chat.id], chatid=message.chat.id, ismp3=True)
+                        if file_path == 'Video too long':
+                            bot.reply_to(message, f'Видео слишком длинное;(', reply_markup=mp.off_markup)
+
+                        # gif2 = types.InputMediaDocument(media=open('video/send.mp4', 'rb'), caption='Отправляем в тг')
+                        bot.edit_message_text(text="Отправляем в телеграмм", chat_id=message.chat.id,
+                                              message_id=gif1_msg_id)
+
+                        doc = open(file_path, 'rb')
+                        init_dw_output = db.init_download(chat_id=message.chat.id, src_type='youtube',
+                                                          date_of_join=date_today(), url=users[message.chat.id])
+                        print(init_dw_output)
+                        bot.send_document(message.chat.id, doc, reply_markup=mp.off_markup,
+                                          caption=mp.get_caption(language=language_usr), parse_mode="MARKDOWN")
+
+                elif service == 'youtube_shorts':
+                    if language_usr == 'O’zbek 🇺🇿':
+                        gif1_msg = bot.send_message(message.chat.id, "YouTubedan yuklanyabti…",
+                                                    reply_to_message_id=message.message_id)
+                        gif1_msg_id = gif1_msg.message_id
+
+                        file_path = download_YT(url=users[message.chat.id], chatid=message.chat.id, ismp3=False)
+                        if file_path == 'Video too long':
+                            bot.reply_to(message, f'video juda uzun', reply_markup=mp.off_markup)
+
+                        # gif2 = types.InputMediaDocument(media=open('video/send.mp4', 'rb'), caption='Отправляем в тг')
+                        bot.edit_message_text(text="telegramga yuboring", chat_id=message.chat.id, message_id=gif1_msg_id)
+
+                        doc = open(file_path, 'rb')
+                        init_dw_output = db.init_download(chat_id=message.chat.id, src_type='youtube_shorts',
+                                                          date_of_join=date_today(), url=users[message.chat.id])
+                        print(init_dw_output)
+                        bot.send_document(message.chat.id, doc, reply_markup=mp.off_markup,
+                                          caption=mp.get_caption(language=language_usr), parse_mode="MARKDOWN")
+
+                    else:
+                        gif1_msg = bot.send_message(message.chat.id, "Скачиваем из youtube", reply_to_message_id=message.message_id)
+                        gif1_msg_id = gif1_msg.message_id
+
+                        file_path = download_YT(url=users[message.chat.id], chatid=message.chat.id, ismp3=False)
+                        if file_path == 'Video too long':
+                            bot.reply_to(message, f'Видео слишком длинное;(', reply_markup=mp.off_markup)
+
+                        # gif2 = types.InputMediaDocument(media=open('video/send.mp4', 'rb'), caption='Отправляем в тг')
+                        bot.edit_message_text(text="Отправляем в телеграмм", chat_id=message.chat.id,
+                                              message_id=gif1_msg_id)
+
+                        doc = open(file_path, 'rb')
+                        init_dw_output = db.init_download(chat_id=message.chat.id, src_type='youtube_shorts',
+                                                          date_of_join=date_today(), url=users[message.chat.id])
+                        print(init_dw_output)
+                        bot.send_document(message.chat.id, doc, reply_markup=mp.off_markup,
+                                          caption=mp.get_caption(language=language_usr), parse_mode="MARKDOWN")
 
                 elif service == 'tiktok':
-                    gif1 = open('video/cat.mp4', 'rb')
-                    gif1_msg = bot.send_document(message.chat.id, gif1, caption='Скачиваем с тиктока...', reply_to_message_id=message.message_id)
-                    gif1_msg_id = gif1_msg.message_id
+                    if language_usr == 'O’zbek 🇺🇿':
+                        gif1_msg = bot.send_message(message.chat.id, "TikTokdan yuklanyabti…", reply_to_message_id=message.message_id)
+                        gif1_msg_id = gif1_msg.message_id
 
-                    output = upload_video_tt(chat_id=str(message.chat.id), url = users[message.chat.id])
-                    if output == 'not found':
-                        bot.reply_to(message, f'Мы не можем найти видео по этой ссылке', reply_markup=mp.off_markup)
+                        output = upload_video_tt(chat_id=str(message.chat.id), url = users[message.chat.id])
+                        if output == 'not found':
+                            bot.reply_to(message, f'media juda uzun', reply_markup=mp.off_markup)
 
-                    file_path = os.getenv("downloads_pwd") + output
+                        file_path = os.getenv("downloads_pwd") + output
 
-                    gif2 = types.InputMediaDocument(media=open('video/send.mp4', 'rb'), caption='Отправляем в тг')
-                    bot.edit_message_media(media=gif2, chat_id=message.chat.id, message_id=gif1_msg_id)
+                        # gif2 = types.InputMediaDocument(media=open('video/send.mp4', 'rb'), caption='Отправляем в тг')
+                        bot.edit_message_text(text="telegramga yuboring", chat_id=message.chat.id, message_id=gif1_msg_id)
 
-                    doc = open(file_path, 'rb')
-                    init_dw_output = db.init_download(chat_id=message.chat.id, src_type='tiktok',date_of_join=date_today(), url=users[message.chat.id])
-                    print(init_dw_output)
-                    bot.send_document(message.chat.id, doc, reply_markup=mp.markup_banner_inline, caption=mp.get_caption(url=users[message.chat.id]))
+                        doc = open(file_path, 'rb')
+                        init_dw_output = db.init_download(chat_id=message.chat.id, src_type='tiktok',date_of_join=date_today(), url=users[message.chat.id])
+                        print(init_dw_output)
+                        bot.send_document(message.chat.id, doc, reply_markup=mp.off_markup, caption=mp.get_caption(language=language_usr))
+
+                    else:
+                        gif1_msg = bot.send_message(message.chat.id, "Скачиваем из tik-tok",
+                                                    reply_to_message_id=message.message_id)
+                        gif1_msg_id = gif1_msg.message_id
+
+                        output = upload_video_tt(chat_id=str(message.chat.id), url=users[message.chat.id])
+                        if output == 'not found':
+                            bot.reply_to(message, f'Мы не можем найти видео по этой ссылке', reply_markup=mp.off_markup)
+
+                        file_path = os.getenv("downloads_pwd") + output
+
+                        # gif2 = types.InputMediaDocument(media=open('video/send.mp4', 'rb'), caption='Отправляем в тг')
+                        bot.edit_message_text(text="Отправляем в тг", chat_id=message.chat.id, message_id=gif1_msg_id)
+
+                        doc = open(file_path, 'rb')
+                        init_dw_output = db.init_download(chat_id=message.chat.id, src_type='tiktok',
+                                                          date_of_join=date_today(), url=users[message.chat.id])
+                        print(init_dw_output)
+                        bot.send_document(message.chat.id, doc, reply_markup=mp.off_markup,
+                                          caption=mp.get_caption(language=language_usr))
+
 
                 elif service == 'instagram':
-                    file_path = list()
-                    gif1 = open('video/cat.mp4', 'rb')
-                    gif1_msg = bot.send_document(message.chat.id, gif1, caption='Скачиваем с инсты...', reply_to_message_id=message.message_id)
-                    gif1_msg_id = gif1_msg.message_id
+                    if language_usr == 'O’zbek 🇺🇿':
+                        file_path = list()
+                        gif1_msg = bot.send_message(message.chat.id, "Instagramdan yuklanyabti…",reply_to_message_id=message.message_id)
+                        gif1_msg_id = gif1_msg.message_id
 
-                    output = upload_video_inst(chat_id=str(message.chat.id), url=users[message.chat.id])
-                    if output == 'not found':
-                        bot.reply_to(message, f'Мы не можем найти видео по этой ссылке', reply_markup=mp.off_markup)
+                        output = upload_video_inst(chat_id=str(message.chat.id), url=users[message.chat.id])
+                        if output == 'not found':
+                            bot.reply_to(message, f'media juda uzun', reply_markup=mp.off_markup)
 
-                    for i in range(len(output)):
-                        file_path.append(os.getenv("downloads_pwd") + output[i])
+                        for i in range(len(output)):
+                            file_path.append(os.getenv("downloads_pwd") + output[i])
 
-                    gif2 = types.InputMediaDocument(media=open('video/send.mp4', 'rb'), caption='Отправляем в тг')
-                    bot.edit_message_media(media=gif2, chat_id=message.chat.id, message_id=gif1_msg_id)
+                        # gif2 = types.InputMediaDocument(media=open('video/send.mp4', 'rb'), caption='Отправляем в тг')
+                        bot.edit_message_text(text="telegramga yuboring", chat_id=message.chat.id, message_id=gif1_msg_id)
 
-                    for i in range(len(file_path)):
-                        doc = open(file_path[i], 'rb')
-                        init_dw_output = db.init_download(chat_id=message.chat.id, src_type='instagram', date_of_join=date_today(), url=users[message.chat.id])
-                        print(init_dw_output)
-                        bot.send_document(message.chat.id, doc, reply_markup=mp.markup_banner_inline, caption=mp.get_caption(url=users[message.chat.id]))
-                        subprocess.run(f'rm {file_path[i]}', shell=True, capture_output=True)
-                    file_path = False
+                        for i in range(len(file_path)):
+                            doc = open(file_path[i], 'rb')
+                            init_dw_output = db.init_download(chat_id=message.chat.id, src_type='instagram', date_of_join=date_today(), url=users[message.chat.id])
+                            print(init_dw_output)
+                            bot.send_document(message.chat.id, doc, reply_markup=mp.off_markup, caption=mp.get_caption(language=language_usr))
+                            subprocess.run(f'rm {file_path[i]}', shell=True, capture_output=True)
+                        file_path = False
+
+                    elif language_usr == 'O’zbek 🇺🇿':
+                        file_path = list()
+                        gif1_msg = bot.send_message(message.chat.id, "Скачивается из Инстаграм",
+                                                    reply_to_message_id=message.message_id)
+                        gif1_msg_id = gif1_msg.message_id
+
+                        output = upload_video_inst(chat_id=str(message.chat.id), url=users[message.chat.id])
+                        if output == 'not found':
+                            bot.reply_to(message, f'мы не можем найти медиа по этой ссылке', reply_markup=mp.off_markup)
+
+                        for i in range(len(output)):
+                            file_path.append(os.getenv("downloads_pwd") + output[i])
+
+                        # gif2 = types.InputMediaDocument(media=open('video/send.mp4', 'rb'), caption='Отправляем в тг')
+                        bot.edit_message_text(text="telegramga yuboring", chat_id=message.chat.id,
+                                              message_id=gif1_msg_id)
+
+                        for i in range(len(file_path)):
+                            doc = open(file_path[i], 'rb')
+                            init_dw_output = db.init_download(chat_id=message.chat.id, src_type='instagram',
+                                                              date_of_join=date_today(), url=users[message.chat.id])
+                            print(init_dw_output)
+                            bot.send_document(message.chat.id, doc, reply_markup=mp.off_markup,
+                                              caption=mp.get_caption(language=language_usr))
+                            subprocess.run(f'rm {file_path[i]}', shell=True, capture_output=True)
+                        file_path = False
+
 
                 else:
                     file_path = False
@@ -553,11 +966,13 @@ def text_handler(message):
             subprocess.run(f'rm {file_path}', shell=True, capture_output=True)
 
 def service_type(url: str) -> 'Return service name of url':
-    service_types = ['instagram', 'youtube', 'tiktok']
+    service_types = ['youtube_shorts','instagram', 'youtube', 'tiktok']
     if url.find('tiktok') == -1:
         service_types.remove('tiktok')
     if url.find('instagram') == -1:
         service_types.remove('instagram')
+    if url.find('youtube.com/shorts') == -1 and url.find('youtu.be.com/shorts') == -1:
+        service_types.remove('youtube_shorts')
     if url.find('youtube') == -1 and url.find('youtu.be') == -1:
         service_types.remove('youtube')
     if url.find('playlist') != -1:
