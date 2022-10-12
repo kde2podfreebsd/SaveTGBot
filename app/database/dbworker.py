@@ -18,6 +18,7 @@ class Users(db.Model):
 
     id = db.Column(db.Integer(), primary_key=True)
     chat_id = db.Column(db.Integer())
+    language = db.Column(db.String(64), default="N/A")
     username = db.Column(db.String(64), default ="N/A")
     date_of_join = db.Column(db.String(64), default ="N/A")
     referal_code = db.Column(db.String(64), default ="N/A")
@@ -26,19 +27,45 @@ class Users(db.Model):
         return f"<User {self.chat_id}>"
 
 def init_user(chat_id: int, username: str, date_of_join: str, referal_code:str):
-    # try:
-    with app.app_context():
-        if Users.query.filter_by(chat_id=chat_id).first():
-            return {"message": 'User already added'}
-        else:
-            user = Users(chat_id=chat_id, username = username, date_of_join = date_of_join, referal_code = referal_code)
-            db.session.add(user)
-            db.session.commit()
+    try:
+        with app.app_context():
+            if Users.query.filter_by(chat_id=chat_id).first():
+                return {"message": 'User already added'}
+            else:
+                user = Users(chat_id=chat_id, username = username, date_of_join = date_of_join, referal_code = referal_code, language='N/A')
+                db.session.add(user)
+                db.session.commit()
 
-        return {"message": 'User added', "name": user.chat_id}
+            return {"message": 'User added', "name": user.chat_id}
 
-    # except Exception as e:
-    #     return jsonify(message=e, status="DB error")
+    except Exception as e:
+        return jsonify(message=e, status="DB error")
+
+def set_language(chat_id, language):
+    try:
+        with app.app_context():
+            if Users.query.filter_by(chat_id=chat_id).first():
+                user = Users.query.filter_by(chat_id=chat_id).first()
+                user.language = language
+                db.session.commit()
+                return {"message": f'Language set is{user.language}', "status": True}
+            else:
+                return {"message": 'No user with this chat_id', "status": False}
+
+    except Exception as e:
+        return jsonify(message=e, status="DB error")
+
+def get_language(chat_id):
+    try:
+        with app.app_context():
+            if Users.query.filter_by(chat_id=chat_id).first():
+                user = Users.query.filter_by(chat_id=chat_id).first()
+                return user.language
+            else:
+                return {"message": 'No user with this chat_id', "status": False}
+
+    except Exception as e:
+        return jsonify(message=e, status="DB error")
 
 def get_users():
     try:
@@ -135,6 +162,7 @@ def get_stat():
             youtube_iter = 0
             tiktok_iter = 0
             instagram_iter = 0
+            shorts_iter = 0
 
             for i in range(len(users)):
                 if users[i].date_of_join == date_today():
@@ -149,6 +177,8 @@ def get_stat():
                     tiktok_iter += 1
                 if downloads[i].src_type == 'instagram':
                     instagram_iter += 1
+                if downloads[i].src_type == 'youtube_shorts':
+                    shorts_iter += 1
 
             return {
                 'number_of_users': len(users),
@@ -157,7 +187,8 @@ def get_stat():
                 'today_downloads': today_downloads,
                 'youtube': youtube_iter,
                 'tiktok': tiktok_iter,
-                'instagram': instagram_iter
+                'instagram': instagram_iter,
+                'youtube_shorts': shorts_iter
             }
 
     except Exception as e:
