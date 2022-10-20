@@ -14,20 +14,16 @@ def get_inline_url_btn(text:str, url:str) -> types.InlineKeyboardMarkup:
 invalid_url = 'Нет ссылки или ссылка не валидна!'
 toomuch_urls = 'Слишком много ссылок... Прикрепите только одну ссылку'
 
-choose_language = 'Выберите язык 🇷🇺 | 🇺🇿 Tilni tanlang'
+choose_language = 'Выберите язык 🇷🇺\nTilni tanlang🇺🇿'
 
 menu_message_ru = '''
 Привет, через этого бота вы можете скачивать видео из Instagram, TikTok и YouTube.
-
-/language - Выберите язык 🇷🇺 | 🇺🇿 Tilni tanlang
 
 Отправьте ссылку на видео, которое хотите скачать:
 '''
 
 menu_message_uz = '''
 *Salom!*, ushbu bot yordamida Instagram, TikTok va YouTube dan video yuklab olishingiz mumkin.
-
-/language - Выберите язык 🇷🇺 | 🇺🇿 Tilni tanlang
 
 Yuklash kerak bo'lgan video havolasini yuboring:
 '''
@@ -81,7 +77,7 @@ def get_stat_msg(number_of_users,users_today,all_downloads,today_downloads,youtu
     return msg
 
 mail_users_msg = '''
-Напишите текст в разметке MARKDOWN
+Напишите текст в разметке MARKDOWN или нажмите cancel_mail
 '''
 
 subscription = types.ReplyKeyboardMarkup(resize_keyboard=True, row_width=1)
@@ -110,14 +106,27 @@ itembtn1 = types.KeyboardButton('/conirm_ad')
 itembtn2 = types.KeyboardButton('/decline_ad')
 confirm_ad.add(itembtn1,itembtn2)
 
-language = types.ReplyKeyboardMarkup(resize_keyboard=True, row_width=2)
-itembtn1 = types.KeyboardButton('Русский 🇷🇺')
-itembtn2 = types.KeyboardButton('O’zbek 🇺🇿')
+cancel_mail = types.ReplyKeyboardMarkup(resize_keyboard=True, row_width=2)
+itembtn1 = types.KeyboardButton('cancel_mail')
+cancel_mail.add(itembtn1)
+
+cancel = types.ReplyKeyboardMarkup(resize_keyboard=True, row_width=2)
+itembtn1 = types.KeyboardButton('cancel')
+cancel.add(itembtn1)
+
+cancel_1 = types.ReplyKeyboardMarkup(resize_keyboard=True, row_width=2)
+itembtn1 = types.KeyboardButton('push')
+itembtn2 = types.KeyboardButton('cancel_mail')
+cancel_1.add(itembtn1, itembtn2)
+
+language = types.InlineKeyboardMarkup(row_width=1)
+itembtn1 = types.InlineKeyboardButton(text='Русский 🇷🇺', callback_data='Русский 🇷🇺')
+itembtn2 = types.InlineKeyboardButton(text='O’zbek 🇺🇿', callback_data='O’zbek 🇺🇿')
 language.add(itembtn1,itembtn2)
 
 def get_caption(language:str):
     if language == "O’zbek 🇺🇿":
-        return "📥 @UzSavebot orqali yuklandi\n\nhttps://t.me/+KYRaNYz3BMo0ZmMy"
+        return "📥 @UzSavebot orqali yuklandi"
     else:
-        return f'📥 Скачано из @UzSavebot\n\nhttps://t.me/+KYRaNYz3BMo0ZmMy'
+        return f'📥 Скачано из @UzSavebot'
 
