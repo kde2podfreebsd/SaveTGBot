@@ -14,3 +14,5 @@ app/.env
 app/chromedriver
 app/config.ini
 app/donqhomo.session
+app/grabber/*.ini
+app/grabber/config.ini
