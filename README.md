@@ -4,7 +4,8 @@
 
 ## Upload video from
 * Youtube [.mp3; max duration: 10 min]
-* Tik-Tok [without tt watermark]
+* Youtube Shorts [.mp4]
+* Tik-Tok [without watermark]
 * Instagram [stories, posts(photo,video,carousel), reels] (dont work for highlight)
 
 ### Configs Example
