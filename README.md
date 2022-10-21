@@ -8,6 +8,8 @@
 * Tik-Tok [without watermark]
 * Instagram [stories, posts(photo,video,carousel), reels] (dont work for highlight)
 
+### [Miro design](https://miro.com/app/board/uXjVPU7fviQ=/)
+
 ### Configs Example
 #### .env (.env-example) 
 ##### pwd - full os path to dir of project
