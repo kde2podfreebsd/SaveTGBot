@@ -7,9 +7,9 @@
 * Youtube Shorts [.mp4]
 * Tik-Tok [without watermark]
 * Instagram [stories, posts(photo,video,carousel), reels] (dont work for highlight)
-
-### [Miro design](https://miro.com/app/board/uXjVPU7fviQ=/)
-
+-----------
+### [Miro design - Miro desk of application architecture](https://miro.com/app/board/uXjVPU7fviQ=/)
+-----------
 ### Configs Example
 #### .env (.env-example) 
 ##### pwd - full os path to dir of project
@@ -33,15 +33,23 @@ channel_username = '@CryptoVedma' #Tezkor_tg
 
 
 ### Install 
-#### 1. 
+
+#### 1. Install requirements
 ```.sh
 cd/app
+pip install -r requirements.txt
+```
+
+#### 2. Rebuild database:db.sqlite
+```.sh
 ./dbmanager rebuild
 ```
 
-#### 2.
+#### 3. Start the app 
 ```.sh
 python bot.py
+# or (infinity restart app if it crash)
+./restarter.sh
 ```
 
 ### Install chromedriver 
