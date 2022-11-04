@@ -1,4 +1,6 @@
 import os
+import time
+
 import telebot
 from bot import markups as mp
 from dotenv import load_dotenv
@@ -19,7 +21,6 @@ config = load_dotenv()
 bot = telebot.TeleBot(os.getenv("TG_API_KEY"))
 
 
-
 users = dict()
 repl_message_user = dict()
 ads = {'shortname': '', 'text':'', 'file_path':'', 'media_type':'', 'btn_text': '', 'btn_url':''}
@@ -32,15 +33,15 @@ mail_users_dict['src'] = ''
 language_msg_ids = dict()
 sub_status = True
 ad_status = False
-channel_link = 'https://t.me/Tezkor_tg'
-channel_username = '@CryptoVedma' #Tezkor_tg
-# channel_link = os.getenv("channel_link")
-# channel_username = os.getenv("channel_username")
-# https://t.me/inst_yt_tt_bot?start=token
+# channel_link = 'https://t.me/Tezkor_tg'
+# channel_username = '@Tezkor_tg'
+channel_link = 'https://t.me/CryptoVedma'
+channel_username = '@CryptoVedma'
+
 @bot.message_handler(commands=['start'])
 def start(message) -> None:
 
-    # try:
+    try:
         result = bot.get_chat_member(channel_username, message.chat.id)
         print(result.status)
         unique_code = extract_unique_code(message.text)
@@ -57,8 +58,8 @@ def start(message) -> None:
         else:
             msg = bot.send_message(message.chat.id, mp.choose_language, reply_markup=mp.language, parse_mode='MARKDOWN')
             language_msg_ids[message.chat.id] = msg.message_id
-    # except Exception as e:
-    #     bot.reply_to(message, f'{e}')
+    except Exception as e:
+        bot.reply_to(message, f'{e}')
 
 @bot.message_handler(commands=['language'])
 def language(message) -> None:
@@ -88,7 +89,6 @@ def stat(message) -> None:
     try:
         if db.is_admin(chat_id=message.chat.id):
             stat = db.get_stat()
-            # print(stat)
             msg = mp.get_stat_msg(
                 number_of_users = stat['number_of_users'],
                 users_today=stat['users_today'],
@@ -629,11 +629,11 @@ def callback_handler(call):
         # language_msg_ids[message.chat.id]
 
         if call.data == 'Русский 🇷🇺':
-            bot.delete_message(call.message.chat.id, message_id=language_msg_ids[call.message.chat.id], timeout=1)
+            bot.delete_message(call.message.chat.id, message_id=language_msg_ids[call.message.chat.id])
             db.set_language(chat_id=call.message.chat.id, language=call.data)
             bot.send_message(call.message.chat.id, mp.menu_message_ru, reply_markup=mp.off_markup, parse_mode='MARKDOWN')
         elif call.data == 'O’zbek 🇺🇿':
-            bot.delete_message(call.message.chat.id, message_id=language_msg_ids[call.message.chat.id], timeout=1)
+            bot.delete_message(call.message.chat.id, message_id=language_msg_ids[call.message.chat.id])
             db.set_language(chat_id=call.message.chat.id, language=call.data)
             bot.send_message(call.message.chat.id, mp.menu_message_uz, reply_markup=mp.off_markup, parse_mode='MARKDOWN')
 
@@ -643,12 +643,12 @@ def callback_handler(call):
             if result.status == 'left':
                 if language == 'O’zbek 🇺🇿':
                     print(repl_message_user[call.message.chat.id])
-                    bot.delete_message(call.message.chat.id, message_id=repl_message_user[call.message.chat.id], timeout=1)
+                    bot.delete_message(call.message.chat.id, message_id=repl_message_user[call.message.chat.id])
                     language_usr = db.get_language(chat_id=call.message.chat.id)
                     msg = bot.send_message(chat_id=call.message.chat.id, text=mp.channel_post_uz,reply_markup=mp.inline_sub_mp(channel_url=channel_link, language= language_usr), parse_mode='MARKDOWN')
                     repl_message_user[call.message.chat.id] = msg.message_id
                 else:
-                    bot.delete_message(call.message.chat.id, message_id=repl_message_user[call.message.chat.id],timeout=1)
+                    bot.delete_message(call.message.chat.id, message_id=repl_message_user[call.message.chat.id])
                     language_usr = db.get_language(chat_id=call.message.chat.id)
                     msg = bot.send_message(chat_id=call.message.chat.id, text=mp.channel_post_ru,reply_markup=mp.inline_sub_mp(channel_url=channel_link, language=language_usr),parse_mode='MARKDOWN')
                     repl_message_user[call.message.chat.id] = msg.message_id
@@ -727,7 +727,7 @@ def callback_handler(call):
                                 # gif2 = types.InputMediaDocument(media=open('video/send.mp4', 'rb'), caption='Отправляем в тг')
                                 # bot.edit_message_text(text="telegramga yuboring", chat_id=call.message.chat.id,
                                 #                       message_id=gif1_msg_id)
-                                bot.delete_message(chat_id=call.message.chat.id, message_id=gif1_msg_id, timeout=0.5)
+                                bot.delete_message(chat_id=call.message.chat.id, message_id=gif1_msg_id)
 
                                 doc = open(file_path, 'rb')
                                 init_dw_output = db.init_download(chat_id=call.message.chat.id, src_type='youtube',
@@ -750,7 +750,7 @@ def callback_handler(call):
                                 # gif2 = types.InputMediaDocument(media=open('video/send.mp4', 'rb'), caption='Отправляем в тг')
                                 # bot.edit_message_text(text="Отправляем в телеграмм", chat_id=call.message.chat.id,
                                 #                       message_id=gif1_msg_id)
-                                bot.delete_message(chat_id=call.message.chat.id, message_id=gif1_msg_id, timeout=0.5)
+                                bot.delete_message(chat_id=call.message.chat.id, message_id=gif1_msg_id)
 
                                 doc = open(file_path, 'rb')
                                 init_dw_output = db.init_download(chat_id=call.message.chat.id, src_type='youtube',
@@ -774,7 +774,7 @@ def callback_handler(call):
                                 # gif2 = types.InputMediaDocument(media=open('video/send.mp4', 'rb'), caption='Отправляем в тг')
                                 # bot.edit_message_text(text="telegramga yuboring", chat_id=call.message.chat.id,
                                 #                       message_id=gif1_msg_id)
-                                bot.delete_message(chat_id=call.message.chat.id, message_id=gif1_msg_id, timeout=0.5)
+                                bot.delete_message(chat_id=call.message.chat.id, message_id=gif1_msg_id)
 
                                 doc = open(file_path, 'rb')
                                 init_dw_output = db.init_download(chat_id=call.message.chat.id, src_type='youtube_shorts',
@@ -797,7 +797,7 @@ def callback_handler(call):
                                 # gif2 = types.InputMediaDocument(media=open('video/send.mp4', 'rb'), caption='Отправляем в тг')
                                 # bot.edit_message_text(text="Отправляем в телеграмм", chat_id=call.message.chat.id,
                                 #                       message_id=gif1_msg_id)
-                                bot.delete_message(chat_id=call.message.chat.id, message_id=gif1_msg_id, timeout=0.5)
+                                bot.delete_message(chat_id=call.message.chat.id, message_id=gif1_msg_id)
 
                                 doc = open(file_path, 'rb')
                                 init_dw_output = db.init_download(chat_id=call.message.chat.id, src_type='youtube_shorts',
@@ -821,14 +821,17 @@ def callback_handler(call):
                                 # gif2 = types.InputMediaDocument(media=open('video/send.mp4', 'rb'), caption='Отправляем в тг')
                                 # bot.edit_message_text(text="telegramga yuboring", chat_id=call.message.chat.id,
                                 #                       message_id=gif1_msg_id)
-                                bot.delete_message(chat_id=call.message.chat.id, message_id=gif1_msg_id, timeout=0.5)
+                                bot.delete_message(chat_id=call.message.chat.id, message_id=gif1_msg_id)
 
                                 doc = open(file_path, 'rb')
                                 init_dw_output = db.init_download(chat_id=call.message.chat.id, src_type='tiktok',
                                                                   date_of_join=date_today(), url=users[call.message.chat.id])
                                 print(init_dw_output)
-                                bot.send_document(call.message.chat.id, doc, reply_markup=mp.off_markup,
+                                try:
+                                    bot.send_video(call.message.chat.id, doc, reply_markup=mp.off_markup,
                                                   caption=mp.get_caption(language=language_usr))
+                                except Exception as e:
+                                    bot.send_message(call.message.chat.id, "fayl juda og'ir", reply_markup=mp.off_markup)
 
                             else:
                                 gif1_msg = bot.send_message(call.message.chat.id, "Скачивается из TikTok...",
@@ -845,14 +848,18 @@ def callback_handler(call):
                                 # gif2 = types.InputMediaDocument(media=open('video/send.mp4', 'rb'), caption='Отправляем в тг')
                                 # bot.edit_message_text(text="Отправляем в тг", chat_id=call.message.chat.id,
                                 #                       message_id=gif1_msg_id)
-                                bot.delete_message(chat_id=call.message.chat.id, message_id=gif1_msg_id, timeout=0.5)
+                                bot.delete_message(chat_id=call.message.chat.id, message_id=gif1_msg_id)
 
                                 doc = open(file_path, 'rb')
                                 init_dw_output = db.init_download(chat_id=call.message.chat.id, src_type='tiktok',
                                                                   date_of_join=date_today(), url=users[call.message.chat.id])
                                 print(init_dw_output)
-                                bot.send_document(call.message.chat.id, doc, reply_markup=mp.off_markup,
+
+                                try:
+                                    bot.send_video(call.message.chat.id, doc, reply_markup=mp.off_markup,
                                                   caption=mp.get_caption(language=language_usr))
+                                except Exception as e:
+                                    bot.send_message(call.message.chat.id, "fayl juda og'ir", reply_markup=mp.off_markup)
 
 
                         elif service == 'instagram':
@@ -872,7 +879,7 @@ def callback_handler(call):
                                 # gif2 = types.InputMediaDocument(media=open('video/send.mp4', 'rb'), caption='Отправляем в тг')
                                 # bot.edit_message_text(text="telegramga yuboring", chat_id=call.message.chat.id,
                                 #                       message_id=gif1_msg_id)
-                                bot.delete_message(chat_id=call.message.chat.id, message_id=gif1_msg_id, timeout=0.5)
+                                bot.delete_message(chat_id=call.message.chat.id, message_id=gif1_msg_id)
 
                                 for i in range(len(file_path)):
                                     doc = open(file_path[i], 'rb')
@@ -902,7 +909,7 @@ def callback_handler(call):
                                 # gif2 = types.InputMediaDocument(media=open('video/send.mp4', 'rb'), caption='Отправляем в тг')
                                 # bot.edit_message_text(text="telegramga yuboring", chat_id=call.message.chat.id,
                                 #                       message_id=gif1_msg_id)
-                                bot.delete_message(chat_id=call.message.chat.id, message_id=gif1_msg_id, timeout=0.5)
+                                bot.delete_message(chat_id=call.message.chat.id, message_id=gif1_msg_id)
 
                                 for i in range(len(file_path)):
                                     doc = open(file_path[i], 'rb')
@@ -1001,7 +1008,7 @@ def text_handler(message):
 
                         # gif2 = types.InputMediaDocument(media=open('video/send.mp4', 'rb'), caption='Отправляем в тг')
                         # bot.edit_message_text(text="telegramga yuboring", chat_id=message.chat.id, message_id=gif1_msg_id)
-                        bot.delete_message(chat_id=message.chat.id, message_id=gif1_msg_id, timeout=0.5)
+                        bot.delete_message(chat_id=message.chat.id, message_id=gif1_msg_id)
 
                         doc = open(file_path, 'rb')
                         init_dw_output = db.init_download(chat_id=message.chat.id, src_type='youtube',
@@ -1023,7 +1030,7 @@ def text_handler(message):
                         # gif2 = types.InputMediaDocument(media=open('video/send.mp4', 'rb'), caption='Отправляем в тг')
                         # bot.edit_message_text(text="Отправляем в телеграмм", chat_id=message.chat.id,
                         #                       message_id=gif1_msg_id)
-                        bot.delete_message(chat_id=message.chat.id, message_id=gif1_msg_id, timeout=0.5)
+                        bot.delete_message(chat_id=message.chat.id, message_id=gif1_msg_id)
 
                         doc = open(file_path, 'rb')
                         init_dw_output = db.init_download(chat_id=message.chat.id, src_type='youtube',
@@ -1046,7 +1053,7 @@ def text_handler(message):
 
                         # gif2 = types.InputMediaDocument(media=open('video/send.mp4', 'rb'), caption='Отправляем в тг')
                         # bot.edit_message_text(text="telegramga yuboring", chat_id=message.chat.id, message_id=gif1_msg_id)
-                        bot.delete_message(chat_id=message.chat.id, message_id=gif1_msg_id, timeout=0.5)
+                        bot.delete_message(chat_id=message.chat.id, message_id=gif1_msg_id)
 
                         doc = open(file_path, 'rb')
                         init_dw_output = db.init_download(chat_id=message.chat.id, src_type='youtube_shorts',
@@ -1068,7 +1075,7 @@ def text_handler(message):
                         # gif2 = types.InputMediaDocument(media=open('video/send.mp4', 'rb'), caption='Отправляем в тг')
                         # bot.edit_message_text(text="Отправляем в телеграмм", chat_id=message.chat.id,
                         #                       message_id=gif1_msg_id)
-                        bot.delete_message(chat_id=message.chat.id, message_id=gif1_msg_id, timeout=0.5)
+                        bot.delete_message(chat_id=message.chat.id, message_id=gif1_msg_id)
 
                         doc = open(file_path, 'rb')
                         init_dw_output = db.init_download(chat_id=message.chat.id, src_type='youtube_shorts',
@@ -1088,15 +1095,16 @@ def text_handler(message):
 
                         file_path = output
 
-                        # gif2 = types.InputMediaDocument(media=open('video/send.mp4', 'rb'), caption='Отправляем в тг')
-                        # bot.edit_message_text(text="telegramga yuboring", chat_id=message.chat.id, message_id=gif1_msg_id)
-                        bot.delete_message(chat_id=message.chat.id, message_id=gif1_msg_id, timeout=0.5)
-
+                        bot.delete_message(chat_id=message.chat.id, message_id=gif1_msg_id)
+                        print(file_path)
                         doc = open(file_path, 'rb')
                         init_dw_output = db.init_download(chat_id=message.chat.id, src_type='tiktok',date_of_join=date_today(), url=users[message.chat.id])
                         print(init_dw_output)
-                        bot.send_document(message.chat.id, doc, reply_markup=mp.off_markup, caption=mp.get_caption(language=language_usr))
 
+                        try:
+                            bot.send_video(message.chat.id, doc, reply_markup=mp.off_markup, caption=mp.get_caption(language=language_usr))
+                        except Exception as e:
+                            bot.send_message(message.chat.id, "fayl juda og'ir", reply_markup=mp.off_markup)
                     else:
                         gif1_msg = bot.send_message(message.chat.id, "Скачиваем из TikTok...",
                                                     reply_to_message_id=message.message_id)
@@ -1108,16 +1116,18 @@ def text_handler(message):
 
                         file_path = output
 
-                        # gif2 = types.InputMediaDocument(media=open('video/send.mp4', 'rb'), caption='Отправляем в тг')
-                        # bot.edit_message_text(text="Отправляем в тг", chat_id=message.chat.id, message_id=gif1_msg_id)
-                        bot.delete_message(chat_id=message.chat.id, message_id=gif1_msg_id, timeout=0.5)
+                        bot.delete_message(chat_id=message.chat.id, message_id=gif1_msg_id)
 
                         doc = open(file_path, 'rb')
                         init_dw_output = db.init_download(chat_id=message.chat.id, src_type='tiktok',
                                                           date_of_join=date_today(), url=users[message.chat.id])
                         print(init_dw_output)
-                        bot.send_document(message.chat.id, doc, reply_markup=mp.off_markup,
+
+                        try:
+                            bot.send_video(message.chat.id, doc, reply_markup=mp.off_markup,
                                           caption=mp.get_caption(language=language_usr))
+                        except Exception as e:
+                            bot.send_message(message.chat.id, "файл слишком большой", reply_markup=mp.off_markup)
 
 
                 elif service == 'instagram':
@@ -1135,7 +1145,7 @@ def text_handler(message):
 
                         # gif2 = types.InputMediaDocument(media=open('video/send.mp4', 'rb'), caption='Отправляем в тг')
                         # bot.edit_message_text(text="telegramga yuboring", chat_id=message.chat.id, message_id=gif1_msg_id)
-                        bot.delete_message(chat_id=message.chat.id, message_id=gif1_msg_id, timeout=0.5)
+                        bot.delete_message(chat_id=message.chat.id, message_id=gif1_msg_id)
 
                         for i in range(len(file_path)):
                             doc = open(file_path[i], 'rb')
@@ -1164,7 +1174,7 @@ def text_handler(message):
                         # gif2 = types.InputMediaDocument(media=open('video/send.mp4', 'rb'), caption='Отправляем в тг')
                         # bot.edit_message_text(text="telegramga yuboring", chat_id=message.chat.id,
                         #                       message_id=gif1_msg_id)
-                        bot.delete_message(chat_id=message.chat.id, message_id=gif1_msg_id, timeout=0.5)
+                        bot.delete_message(chat_id=message.chat.id, message_id=gif1_msg_id)
 
                         for i in range(len(file_path)):
                             doc = open(file_path[i], 'rb')
@@ -1195,7 +1205,6 @@ def text_handler(message):
             bot.reply_to(message, f'Не удалось скачать!\nПожалуйста, проверьте ссылку и повторите попытку.', reply_markup=mp.off_markup)
         else:
             pass
-
 
     finally:
         if file_path == False:
@@ -1239,9 +1248,10 @@ def referal_stat_msg(data):
 
 def get_random_int(length: int):
     return randrange(length)
-#hi
+
 def main():
     bot.polling(none_stop=True)
 
 if __name__ == "__main__":
     main()
+

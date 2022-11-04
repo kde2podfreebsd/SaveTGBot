@@ -6,6 +6,7 @@ import uuid
 
 app = Flask(__name__)
 app.app_context().push()
+
 basedir = os.path.abspath(os.path.dirname(__file__))
 
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
