@@ -11,6 +11,40 @@ def get_inline_url_btn(text:str, url:str) -> types.InlineKeyboardMarkup:
     channel_url_mp.add(channel)
     return channel_url_mp
 
+def get_caption(language:str):
+    if language == "O’zbek 🇺🇿":
+        return "📥 @UzSavebot orqali yuklandi"
+    else:
+        return f'📥 Скачано из @UzSavebot'
+
+def inline_sub_mp(channel_url:str, language:str):
+    channel_post_mp = types.InlineKeyboardMarkup(row_width=1)
+
+    if language == 'O’zbek 🇺🇿':
+        channel = types.InlineKeyboardButton(text='Kanalga obuna bo’lish ⬅️', url=channel_url)
+        check = types.InlineKeyboardButton(text='✅Tasdiqlash', callback_data=f'check')
+    else:
+        channel = types.InlineKeyboardButton(text='Перейти на канал', url=channel_url)
+        check = types.InlineKeyboardButton(text='✅Подтвердить', callback_data=f'check')
+
+    channel_post_mp.add(channel, check)
+    return channel_post_mp
+
+def get_stat_msg(number_of_users,users_today,all_downloads,today_downloads,youtube,tiktok,instagram,youtube_shorts):
+    msg = f'''
+Статистика бота
+
+Количество всех пользователей бота: {number_of_users}
+Количество пользователей за сегодня: {users_today}
+Количество всех скачанных видео: {all_downloads}
+Количество всех скачанных видео за сегодня: {today_downloads}
+Количество скачанных видео (за все время) из тикток: {tiktok}
+Количество скачанных видео (за все время) из инстаграм: {instagram}
+Количество скачанных аудио (за все время) из ютуб: {youtube}
+Колличество скачанных видео (за все время) из ютуб: {youtube_shorts}
+'''
+    return msg
+
 invalid_url = 'Нет ссылки или ссылка не валидна!'
 toomuch_urls = 'Слишком много ссылок... Прикрепите только одну ссылку'
 
@@ -37,20 +71,6 @@ channel_post_uz = '''
 Iltimos, botdan foydalanish uchun kanalimizga obuna bo'ling va «Tasdiqlash» tugmasini bosing 👇🏻
 '''
 
-
-def inline_sub_mp(channel_url:str, language:str):
-    channel_post_mp = types.InlineKeyboardMarkup(row_width=1)
-
-    if language == 'O’zbek 🇺🇿':
-        channel = types.InlineKeyboardButton(text='Kanalga obuna bo’lish ⬅️', url=channel_url)
-        check = types.InlineKeyboardButton(text='✅Tasdiqlash', callback_data=f'check')
-    else:
-        channel = types.InlineKeyboardButton(text='Перейти на канал', url=channel_url)
-        check = types.InlineKeyboardButton(text='✅Подтвердить', callback_data=f'check')
-
-    channel_post_mp.add(channel, check)
-    return channel_post_mp
-
 menu_admin = types.ReplyKeyboardMarkup(resize_keyboard=True, row_width=2)
 itembtn1 = types.KeyboardButton('/stat')
 itembtn2 = types.KeyboardButton('/create_referal')
@@ -59,22 +79,6 @@ itembtn4 = types.KeyboardButton('/mail_users')
 itembtn5 = types.KeyboardButton('/subscription')
 itembtn6 = types.KeyboardButton('/ads')
 menu_admin.add(itembtn1,itembtn2,itembtn3,itembtn4,itembtn5,itembtn6)
-
-
-def get_stat_msg(number_of_users,users_today,all_downloads,today_downloads,youtube,tiktok,instagram,youtube_shorts):
-    msg = f'''
-Статистика бота
-
-Количество всех пользователей бота: {number_of_users}
-Количество пользователей за сегодня: {users_today}
-Количество всех скачанных видео: {all_downloads}
-Количество всех скачанных видео за сегодня: {today_downloads}
-Количество скачанных видео (за все время) из тикток: {tiktok}
-Количество скачанных видео (за все время) из инстаграм: {instagram}
-Количество скачанных аудио (за все время) из ютуб: {youtube}
-Колличество скачанных видео (за все время) из ютуб: {youtube_shorts}
-'''
-    return msg
 
 mail_users_msg = '''
 Напишите текст в разметке MARKDOWN или нажмите cancel_mail
@@ -123,10 +127,4 @@ language = types.InlineKeyboardMarkup(row_width=1)
 itembtn1 = types.InlineKeyboardButton(text='Русский 🇷🇺', callback_data='Русский 🇷🇺')
 itembtn2 = types.InlineKeyboardButton(text='O’zbek 🇺🇿', callback_data='O’zbek 🇺🇿')
 language.add(itembtn1,itembtn2)
-
-def get_caption(language:str):
-    if language == "O’zbek 🇺🇿":
-        return "📥 @UzSavebot orqali yuklandi"
-    else:
-        return f'📥 Скачано из @UzSavebot'
 

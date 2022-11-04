@@ -24,7 +24,7 @@ pyasn1==0.4.8
 Pygments==2.13.0
 pyparsing==3.0.9
 PySocks==1.7.1
-pyTelegramBotAPI==4.7.0
+pyTelegramBotAPI==4.7.1
 python-dotenv==0.21.0
 pytube==12.1.0
 PyVirtualDisplay==3.0
@@ -37,7 +37,6 @@ sniffio==1.3.0
 sortedcontainers==2.4.0
 soupsieve==2.3.2.post1
 SQLAlchemy==1.4.41
-telebot==0.0.4
 Telethon==1.25.2
 tiktok-downloader==0.3.4
 tqdm==4.64.1
