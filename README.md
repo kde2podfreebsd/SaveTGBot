@@ -1,5 +1,5 @@
 # SocMediaScrapper Telegram Bot 
-## Test the bot now - [@UzSavebot](https://t.me/UzSavebot)
+## Test the bot now - [@UzSavebot](https://t.me/UzSavebot) (inactive) 
 ------------------------
 
 ## Upload video from
