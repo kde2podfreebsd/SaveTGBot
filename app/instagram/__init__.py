@@ -1,1 +1,0 @@
-from .inst import upload_video_inst
